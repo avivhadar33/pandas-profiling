@@ -18,6 +18,7 @@ from pandas_profiling.model.base import (
 )
 from pandas_profiling.model.messages import MessageType
 from pandas_profiling.report.structure.correlations import get_correlation_items
+from pandas_profiling.report.structure.dimension_reduction import get_dim_reduction_items
 from pandas_profiling.report.structure.overview import (
     get_dataset_overview,
     get_dataset_reproduction,
@@ -195,6 +196,24 @@ def get_scatter_matrix(scatter_matrix):
         )
     return titems
 
+def get_distributions_per_label(summary):
+    image_format = config["plot"]["image_format"].get(str)
+    dist_per_label = summary['dist_per_label']
+
+    items = []
+    for column, dist_plot in dist_per_label.items():
+        items.append(
+            Image(
+                dist_plot,
+                image_format=image_format,
+                alt=f'{column} dist per label',
+                anchor_id=f'{column}_dist_per_label',
+                name=column
+            )
+        )
+
+    return items
+
 
 def get_dataset_items(summary, date_start, date_end, warnings):
     items = [
@@ -207,12 +226,12 @@ def get_dataset_items(summary, date_start, date_end, warnings):
             warning
             for warning in warnings
             if warning.message_type
-            not in [
-                MessageType.UNIFORM,
-                MessageType.UNIQUE,
-                MessageType.REJECTED,
-                MessageType.CONSTANT,
-            ]
+               not in [
+                   MessageType.UNIFORM,
+                   MessageType.UNIQUE,
+                   MessageType.REJECTED,
+                   MessageType.CONSTANT,
+               ]
         ]
     )
     if count > 0:
@@ -221,12 +240,15 @@ def get_dataset_items(summary, date_start, date_end, warnings):
     return items
 
 
+# todo: add get_dim_reduction_section
+
+
 def get_section_items() -> List[Renderable]:
     return []
 
 
 def get_report_structure(
-    date_start: datetime, date_end: datetime, sample: dict, summary: dict
+        date_start: datetime, date_end: datetime, sample: dict, summary: dict
 ) -> Renderable:
     """Generate a HTML report from summary statistics and a given sample.
 
@@ -267,9 +289,21 @@ def get_report_structure(
         )
     )
 
+    section_items.append(
+        Sequence(
+            get_distributions_per_label(summary),
+            sequence_type='tabs',
+            name='Distributions per Label',
+            anchor_id='dist_per_label'
+        )
+    )
+
     corr = get_correlation_items(summary)
     if corr is not None:
         section_items.append(corr)
+
+    dim_reduction = get_dim_reduction_items(summary)
+    section_items.append(dim_reduction)
 
     section_items.append(
         Sequence(
@@ -279,6 +313,7 @@ def get_report_structure(
             anchor_id="missing",
         )
     )
+
     section_items.append(
         Sequence(
             get_sample_items(sample),
@@ -287,6 +322,8 @@ def get_report_structure(
             anchor_id="sample",
         )
     )
+
+    # todo: add dimension reduction section
 
     sections = Sequence(section_items, name="Report", sequence_type="sections")
 

@@ -123,7 +123,6 @@ def categorical_matrix(
 
     return correlation_matrix
 
-
 def warn_correlation(correlation_name, error):
     warnings.warn(
         f"""There was an attempt to calculate the {correlation_name} correlation, but this failed.

@@ -7,6 +7,9 @@ pool_size: 0
 # Show the progress bar
 progress_bar: True
 
+# target column
+target_col: None
+
 # Per variable type description settings
 vars:
     num:
@@ -61,6 +64,11 @@ correlations:
       calculate: True
       warn_high_correlations: True
       threshold: 1.0
+
+# Dimension Reduction
+# dim_reduction:
+
+
 
 # Bivariate / Pairwise relations
 interactions:

@@ -234,3 +234,30 @@ def scatter_pairwise(series1, series2, x_label, y_label) -> str:
     else:
         plt.scatter(series1.tolist(), series2.tolist(), color=color)
     return plot_360_n0sc0pe(plt)
+
+
+def scatter_2d_plot_by_label(array_to_plot, target: pd.Series = None):
+    color = config["html"]["style"]["primary_color"].get(str)
+
+    if target is None:
+        plt.scatter(array_to_plot[:, 0], array_to_plot[:, 1], color=color)
+        return plot_360_n0sc0pe(plt)
+    for t in target.unique():
+        indexes = [i for i in range(len(target)) if target.iloc[i] == t]
+        plt.scatter(array_to_plot[indexes, 0], array_to_plot[indexes, 1], label='target=' + str(t))
+    plt.legend()
+    return plot_360_n0sc0pe(plt)
+
+
+def plot_distribution_per_label(feature: pd.Series, target: pd.Series = None):
+    for t in target.unique():
+        sns.kdeplot(feature[target == t], label='target=' + str(t))
+    plt.legend()
+    return plot_360_n0sc0pe(plt)
+
+
+
+
+
+
+

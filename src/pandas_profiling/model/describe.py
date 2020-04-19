@@ -25,6 +25,7 @@ from pandas_profiling.model.messages import (
 from pandas_profiling.model import base
 from pandas_profiling.model.base import Variable
 from pandas_profiling.model.correlations import calculate_correlations
+from pandas_profiling.model.dimension_reduction import calculate_dim_reduction
 from pandas_profiling.visualisation.missing import (
     missing_bar,
     missing_matrix,
@@ -32,6 +33,7 @@ from pandas_profiling.visualisation.missing import (
     missing_dendrogram,
 )
 from pandas_profiling.visualisation.plot import scatter_pairwise
+from pandas_profiling.visualisation.plot import plot_distribution_per_label
 
 
 def describe_numeric_1d(series: pd.Series, series_description: dict) -> dict:
@@ -538,6 +540,29 @@ def get_scatter_matrix(df, variables):
     return scatter_matrix
 
 
+def get_distribution_per_label(df: pd.DataFrame, variables: dict):
+    disable_progress_bar = not config["progress_bar"].get(bool)
+    target_col = config['target_col'].get(str)
+    if target_col is None:
+        return dict()
+
+    distribution_plots = dict()
+    continuous_variables = [
+        column for column, type in variables.items() if type == Variable.TYPE_NUM and column != target_col
+    ]
+
+    with tqdm(
+            total=len(continuous_variables),
+            desc="var distribution per label",
+            disable=disable_progress_bar,
+    ) as pbar:
+        for column in continuous_variables:
+            distribution_plots[column] = plot_distribution_per_label(df[column], df[target_col])
+            pbar.update()
+
+    return distribution_plots
+
+
 def sort_column_names(dct: Mapping, sort: str):
     sort = sort.lower()
     if sort.startswith("asc"):
@@ -618,11 +643,17 @@ def describe(df: pd.DataFrame) -> dict:
     # Transform the series_description in a DataFrame
     variable_stats = pd.DataFrame(series_description)
 
+    # variables distribution per label
+    dist_per_label = get_distribution_per_label(df, variables)
+
     # Get correlations
     correlations = calculate_correlations(df, variables)
 
     # Scatter matrix
     scatter_matrix = get_scatter_matrix(df, variables)
+
+    # dim reduction
+    dim_reduction = calculate_dim_reduction(df, variables)
 
     # Table statistics
     with tqdm(total=1, desc="table", disable=disable_progress_bar) as pbar:
@@ -660,8 +691,12 @@ def describe(df: pd.DataFrame) -> dict:
         "variables": series_description,
         # Bivariate relations
         "scatter": scatter_matrix,
+        # Distributions per label
+        'dist_per_label': dist_per_label,
         # Correlation matrices
         "correlations": correlations,
+        # Dimension reduction
+        'dim_reduction': dim_reduction,
         # Missing values
         "missing": missing,
         # Warnings
